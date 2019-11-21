@@ -11,17 +11,32 @@
 #include "Watchable.h"
 
 //Constructor
+// Session::Session(const std::string &configFilePath) : content(new vector<Watchable*>() : vector<BaseAction*> {
 Session::Session(const std::string &configFilePath) {
     // read a JSON file
     using json = nlohmann::json;
     std::ifstream i(configFilePath);
-    json j;
-    i >> j;
-
-    for (int i = 0; i < j["movies"].size(); i++) {
-        content.push_back(new Movie(i, j["movies"][i]["name"], j["movies"][i]["length"], j["movies"][i]["tags"]));
-        std::cout << "Moview: " << content.at(i)->toString() << std::endl;
+    json data;
+    i >> data;
+    
+    int id(0);
+    for(int i = 0; i < data["movies"].size(); ++i) {
+        content.push_back(new Movie(id, data["movies"][i]["name"], data["movies"][i]["length"], data["movies"][i]["tags"]));
+        id++;
     }
+
+    for(int i = 0; i < data["tv_series"].size(); ++i) {
+        for(int season = 1; season <= data["tv_series"][i]["seasons"].size(); ++season) {
+            for(int episode = 1; episode <= data["tv_series"][i]["seasons"][season-1]; ++episode) {
+                content.push_back(new Episode(id, data["tv_series"][i]["name"], data["tv_series"][i]["episode_length"], season, episode, data["tv_series"][i]["tags"]));
+                id++;
+            }
+        }
+    }
+
+    for(int f = 0; f < content.size(); ++f)
+        std::cout << content[f]->toString() << '\n';
+
 };
 
 void Session::start() {
