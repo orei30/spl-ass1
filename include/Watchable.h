@@ -15,6 +15,8 @@ public:
     long getId() const;
     int getLen() const;
     std::vector<std::string> getTags() const;
+protected:
+    virtual std::string vectorToString(const std::vector<std::string> &) const;
 private:
     const long id;
     int length;

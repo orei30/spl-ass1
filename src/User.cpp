@@ -9,6 +9,10 @@ std::string User::getName() const {
     return this->name;
 }
 
+// void User::setName(std::string value) {
+//     this->name = value;
+// }
+
 // std::vector<Watchable*> get_history() const {
 //     return this->history;
 // }

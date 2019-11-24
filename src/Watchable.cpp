@@ -1,6 +1,5 @@
 #include "../include/Watchable.h"
 #include <iostream>
-
 #include <string>
 #include <vector>
 
@@ -28,19 +27,27 @@ std::vector<std::string> Watchable::getTags() const {
     return this->tags;
 }
 
-// std::string Movie::toString() const {
-//         return std::cout << "Id: " + getId() +  " Name: " + name << " Length: " + getLen() + " Tags: " + getTags() << std::endl;
-// }
-
-// std::string Episode::toString() const {
-//         return std::cout << "Id: " << getId() << " Name: " << seriesName << " Season: " << season << " Episode: " << episode << " Length: " << getLen() << " Tags: " << getTags() << std::endl;
-// }
-
 std::string Movie::toString() const {
-        return "Id: " + std::to_string(getId()) + " Name: " + name + " Length: " + std::to_string(getLen());
+    return std::to_string(getId() + 1) + ". " + name + " " + std::to_string(getLen()) + " minutes " + vectorToString(getTags());
 }
 std::string Episode::toString() const {
-        return "Id: " + std::to_string(getId()) + " Name: " + seriesName + " Season: " + std::to_string(season) + " Episode: " + std::to_string(episode) + " Length: " + std::to_string(getLen());
+    return std::to_string(getId() + 1) + ". " + seriesName + " S" + std::to_string(season) + "E" + std::to_string(episode) + " " + std::to_string(getLen()) + " minutes " + vectorToString(getTags());
+}
+
+std::string Watchable::vectorToString(const std::vector<std::string> &vector) const {
+    std::string tags;
+    if(!vector.empty()) {
+        tags += "[" + vector[0];
+        int numOfTags(vector.size());
+        if(numOfTags != 1) {
+            for(int i = 1; i < numOfTags - 1; ++i) {
+                tags += ", " + vector[i];
+            }
+            tags += ", " + vector[numOfTags-1];
+        }
+        tags += "]";
+    }
+    return tags;
 }
 // Movie::Watchable* getNextWatchable(Session& ses) const{
 

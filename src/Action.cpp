@@ -26,10 +26,10 @@
 
 //  ChangeActiveUser:: ChangeActiveUser() : BaseAction() {}
 
- void ChangeActiveUser::act(Session& sess){
-    std::string delimiter = " ";
-    std::string token = sess.substr(s.find(delimiter), sess.length()-1);
-// }
+//  void ChangeActiveUser::act(Session& sess){
+//     std::string delimiter = " ";
+//     std::string token = sess.substr(s.find(delimiter), sess.length()-1);
+// // }
 
 // std::string ChangeActiveUser::toString() const{
     

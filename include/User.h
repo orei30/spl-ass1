@@ -13,6 +13,7 @@ public:
     User(const std::string& name);
     // virtual Watchable* getRecommendation(Session& s) = 0;
     std::string getName() const;
+    void setName(std::string);
     std::vector<Watchable*> get_history() const;
 protected:
     std::vector<Watchable*> history;
@@ -20,6 +21,8 @@ private:
     const std::string name;
 
 };
+
+//Todo: add a distructor
 
 
 class LengthRecommenderUser : public User {
