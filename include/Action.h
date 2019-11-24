@@ -24,6 +24,9 @@ protected:
 private:
 	std::string errorMsg;
 	ActionStatus status;
+	template <typename Out>
+    void split(const std::string &s, char delim, Out result);
+    std::vector<std::string> split(const std::string &s, char delim);
 };
 
 class CreateUser  : public BaseAction {
