@@ -1,137 +1,197 @@
 #include "../include/Session.h"
-#include <../include/json.hpp>
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <unordered_map>
-#include <string>
-#include <sstream>
-#include <iterator>
-#include "Action.h"
-#include "User.h"
-#include "Watchable.h"
+#include "../include/json.hpp"
+#include "../include/Watchable.h"
+#include "../include/User.h"
+
+using namespace std;
 
 //Constructor
-// Session::Session(const std::string &configFilePath) : content(new vector<Watchable*>() : vector<BaseAction*> {
-Session::Session(const std::string &configFilePath) : activeUser(new LengthRecommenderUser("default")) {
-    userMap.insert({"default",activeUser});
+Session::Session(const string &configFilePath) : content(), actionsLog(), userMap(), activeUser(new LengthRecommenderUser("default")) {
+    userMap.insert({"default", activeUser});
     addDataToContentFromJsonFilePath(configFilePath);
-};
+}
+
+// Destructor
+Session::~Session() {
+    clean();
+}
+
+// Copy Constructor
+Session::Session(const Session &other) : content(), actionsLog(), userMap(), activeUser() {
+    copy(other);
+}
+
+// Copy Assignment
+Session& Session::operator=(const Session &other) {
+    if (this != &other) {
+        clean();
+        copy(other);
+    }
+    return *this;
+}
+
+// Move Constructor
+Session::Session(Session&& other)
+    : content(other.content), actionsLog(other.actionsLog), userMap(other.userMap), activeUser(other.activeUser) {
+    other.content.clear();
+    other.actionsLog.clear();
+    other.userMap.clear();
+    other.activeUser = nullptr;
+}
+
+// Move Assignment
+Session& Session::operator=(Session &&other) {
+    if (this != &other) {
+        clean();
+        copy(other);
+        other.clean();
+    }
+    return *this;
+}
 
 void Session::start() {
-    std::string input("");
-    std::cout << "SPLFLIX is now on!" << std::endl;
-    
-
-    while(input != "exit") {
-        std::cout << "Your command: ";
-        std::getline(std::cin, input);
-        setUserInput(input);
-        std::vector<std::string> splitedInput = split(input, ' ');
-        if(splitedInput[0].compare("createuser") == 0) {
-            if(splitedInput.size() != 3) {
-                std::cout << "Error - invalid parameters" << std::endl;
-            } else {
-                if(userMap.count(splitedInput[1]) != 0) {
-                    std::cout << "Error - user exist" << std::endl;
-                } else {
-                    if(splitedInput[2].compare("len") == 0) {
-                        userMap.insert({splitedInput[1], new LengthRecommenderUser(splitedInput[1])});
-                    } else if(splitedInput[2].compare("rer") == 0) {
-                        userMap.insert({splitedInput[1], new RerunRecommenderUser(splitedInput[1])});
-                    } else if(splitedInput[2].compare("gen") == 0) {
-                        userMap.insert({splitedInput[1], new GenreRecommenderUser(splitedInput[1])});
-                    } else {
-                        std::cout << "Error - invalid preffernce algorithem `" << std::endl;
-                    }
-                }
-                
-            }
+    string input;
+    cout << "SPLFLIX is now on!" << endl;
+    cin >> input;
+    while (input != "exit") {
+        if (input == "createuser") {
+            BaseAction *cu = new CreateUser;
+            cu->act(*this);
+            actionsLog.push_back(cu);
         }
-        if(splitedInput[0].compare("changeuser") == 0) {
-            if(splitedInput.size() != 2) {
-                std::cout << "Error - invalid parameters" << std::endl;
-            } else {
-                if(userMap.count(splitedInput[1]) == 0) {
-                    std::cout << "Error - user doesn't exist" << std::endl;
-                } else {
-                    std::unordered_map<std::string,User*>::const_iterator userFromMap = userMap.find(splitedInput[1]);
-                    activeUser = userFromMap->second;
-                }
-            }
+        if (input == "changeuser") {
+            BaseAction *cau = new ChangeActiveUser;
+            cau->act(*this);
+            actionsLog.push_back(cau);
         }
-        if(splitedInput[0].compare("deleteuser") == 0) {
-            if(splitedInput.size() != 2) {
-                std::cout << "Error - invalid parameters" << std::endl;
-            } else {
-                if(userMap.count(splitedInput[1]) == 0) {
-                    std::cout << "Error - user doesn't exist" << std::endl;
-                } else {
-                    userMap.erase(splitedInput[1]);
-                }
-            }
+        if (input == "deleteuser") {
+            BaseAction *delu = new DeleteUser;
+            delu->act(*this);
+            actionsLog.push_back(delu);
         }
-        if(splitedInput[0].compare("dupuser") == 0) {
-            if(splitedInput.size() != 3) {
-                std::cout << "Error - invalid parameters" << std::endl;
-            } else {
-                if(userMap.count(splitedInput[1]) == 0) {
-                    std::cout << "Error - user doesn't exist" << std::endl;
-                } else {
-                    if(userMap.count(splitedInput[2]) == 0) {
-                        std::unordered_map<std::string,User*>::const_iterator userFromMap = userMap.find(splitedInput[1]);
-                    } else {
-                        std::cout << "Error - user exist" << std::endl;
-                    }
-                }
-            }
-            std::cout << "Duplicate User" << input << std::endl;
+        if (input == "dupuser") {
+            BaseAction *dupu = new DuplicateUser;
+            dupu->act(*this);
+            actionsLog.push_back(dupu);
         }
-        if(splitedInput[0].compare("content") == 0) {
-            std::cout << "Print Content List" << input << std::endl;
+        if (input == "content") {
+            BaseAction *pcl = new PrintContentList;
+            pcl->act(*this);
+            actionsLog.push_back(pcl);
         }
-        if(splitedInput[0].compare("watchhist") == 0) {
-            std::cout << "Print Watch History" << input << std::endl;
+        if (input == "watchhist") {
+            BaseAction *pwh = new PrintWatchHistory;
+            pwh->act(*this);
+            actionsLog.push_back(pwh);
         }
-        if(splitedInput[0].compare("watch") == 0) {
-            std::cout << "Watch" << input << std::endl;
+        if (input == "watch") {
+            BaseAction *w = new Watch;
+            w->act(*this);
         }
-        if(splitedInput[0].compare("log") == 0) {
-            std::cout << "Print Actions Log" << input << std::endl;
+        if (input == "log") {
+            BaseAction *pal = new PrintActionsLog;
+            pal->act(*this);
+            actionsLog.push_back(pal);
         }
+        cin >> input;
+    }
+    if (input == "exit") {
+        BaseAction *exit = new Exit;
+        exit->act(*this);
+        actionsLog.push_back(exit);
     }
 }
 
-std::string Session::getUserInput() const{
-    return this->userInput;
+void Session::setActiveUser(User* user) {
+    activeUser = user;
 }
 
-void Session::setUserInput(std::string value) {
-    this->userInput = value;
+User* Session::getActiveUser() {
+    return activeUser;
 }
 
-void Session::addDataToContentFromJsonFilePath(const std::string &configFilePath) {
+bool Session::userExist(string userName) {
+    return userMap.count(userName) != 0;
+}
+
+void Session::addUserToUserMap(std::string name, User* user){
+    userMap.insert({name, user});
+}
+
+User* Session::getUserFromUserMap(std::string name) {
+    return userMap.find(name)->second;
+}
+
+void Session::deleteUser(std::string name){
+    delete userMap.find(name)->second;
+    userMap.erase(name);
+}
+
+std::vector<Watchable*>& Session::getContent() {
+    return content;
+}
+
+std::vector<BaseAction *>& Session::getActionsLog() {
+    return actionsLog;
+}
+
+void Session::addToLog(BaseAction* action){
+    actionsLog.push_back(action);
+}
+
+void Session::copy(const Session &other) {
+    for (size_t i = 0; i < other.content.size(); ++i)
+        content.push_back(other.content[i]->clone());
+    for (size_t i = 0; i < other.actionsLog.size(); ++i)
+        actionsLog.push_back(other.actionsLog[i]->clone());
+    for (pair<string, User*> user : other.userMap)
+        userMap.insert({user.second->getName(), user.second->clone()});
+    activeUser = getUserFromUserMap(other.activeUser->getName());
+}
+
+void Session::clean() {
+    for (size_t i = 0; i < content.size(); ++i)
+        delete content[i];
+    content.clear();
+    for (size_t i = 0; i < actionsLog.size(); ++i)
+        delete actionsLog[i];
+    actionsLog.clear();
+    for (pair<string, User*> user : userMap)
+        delete user.second;
+    userMap.clear();
+    activeUser = nullptr;
+}
+
+void Session::addDataToContentFromJsonFilePath(const string &configFilePath) {
     // read a JSON file
     using json = nlohmann::json;
-    std::ifstream i(configFilePath);
+    ifstream i(configFilePath);
     json data;
     i >> data;
 
     int id(0);
-    for(int i = 0; i < data["movies"].size(); ++i) {
+    for (size_t i = 0; i < data["movies"].size(); ++i) {
         content.push_back(new Movie(id, data["movies"][i]["name"], data["movies"][i]["length"], data["movies"][i]["tags"]));
         id++;
     }
 
-    for(int i = 0; i < data["tv_series"].size(); ++i) {
-        for(int season = 1; season <= data["tv_series"][i]["seasons"].size(); ++season) {
-            for(int episode = 1; episode <= data["tv_series"][i]["seasons"][season-1]; ++episode) {
-                content.push_back(new Episode(id, data["tv_series"][i]["name"], data["tv_series"][i]["episode_length"], season, episode, data["tv_series"][i]["tags"]));
+    for (size_t i = 0; i < data["tv_series"].size(); ++i)
+    {
+        for (size_t season = 1; season <= data["tv_series"][i]["seasons"].size(); ++season)
+        {
+            for (size_t episode = 1; episode <= data["tv_series"][i]["seasons"][season - 1]; ++episode)
+            {
+                if(i < data["tv_series"].size() - 1) {
+                    if(data["tv_series"][i]["name"] == data["tv_series"][i+1]["name"]) {
+                        content.push_back(new Episode(id, data["tv_series"][i]["name"], data["tv_series"][i]["episode_length"], season, episode, id, data["tv_series"][i]["tags"]));
+                    } else {
+                        content.push_back(new Episode(id, data["tv_series"][i]["name"], data["tv_series"][i]["episode_length"], season, episode, -1, data["tv_series"][i]["tags"]));
+                    }
+                } else {
+                    content.push_back(new Episode(id, data["tv_series"][i]["name"], data["tv_series"][i]["episode_length"], season, episode, -1, data["tv_series"][i]["tags"]));
+                }
                 id++;
             }
         }
     }
-
-    for(int f = 0; f < content.size(); ++f)
-        std::cout << content[f]->toString() << '\n';
 }
